@@ -250,26 +250,24 @@ namespace UnitCalculator
             mt_tbx.Text = "";
             mi_tbx.Text = "";
             ft_tbx.Text = "";
+            ly_tbx.Text = "";
         }
 
         private void mt_tbx_TextChanged(object sender, TextChangedEventArgs e)
         {
             double value;
-            if (Double.TryParse(mt_tbx.Text, out value) && mtTbx_Focused)
+            if (mtTbx_Focused)
             {
-                double miles = value * 0.000621371;                 // calculating miles
-                mi_tbx.Text = (Math.Round(miles, 3)).ToString();    //
-
-                int inches = (int)Math.Round(value * 39.3701);              // Calculating feet / inches
-                int ft = (inches - (inches % 12)) / 12;                     //
-                inches %= 12;                                               //
-                if (inches != 0)                                            //
-                    ft_tbx.Text = String.Format("{0}'{1}''", ft, inches);   //
+                if (Double.TryParse(mt_tbx.Text, out value))
+                {
+                    mi_tbx.Text = convertToStandard(metresToMiles(value));   
+                    ft_tbx.Text = metresToFeetAndInches(value);
+                    ly_tbx.Text = convertToStandard(metresToLightYears(value));
+                }
                 else
-                    ft_tbx.Text = ft.ToString();            
+                    resetTextboxes();
             }
-            if (mt_tbx.Text == "")
-                resetTextboxes();
+            
         }
 
         private void mt_tbx_GotFocus(object sender, RoutedEventArgs e)
@@ -284,7 +282,19 @@ namespace UnitCalculator
 
         private void mi_tbx_TextChanged(object sender, TextChangedEventArgs e)
         {
-                       
+            double miles;
+            if (miTbx_Focused)
+            {
+                if (Double.TryParse(mi_tbx.Text, out miles))
+                {
+                    double metres = milesToMetres(miles);
+                    mt_tbx.Text = convertToStandard(metres);
+                    ft_tbx.Text = metresToFeetAndInches(metres);
+                    ly_tbx.Text = convertToStandard(metresToLightYears(metres));
+                }
+                else
+                    resetTextboxes();
+            }
         }
 
         private void mi_tbx_GotFocus(object sender, RoutedEventArgs e)
@@ -335,16 +345,20 @@ namespace UnitCalculator
             return input * 0.000621371;     
         }
 
+        private double metresToLightYears(double input)
+        {
+            return input / 9460730472580800;
+        }
+
         private string convertToStandard(double input)
         {
             string result;
             if (input > 1000)
             {
                 int p = 0;
-                double input_p = input;
-                while (input_p > 10)
+                while (input > 10)
                 {
-                    input_p /= 10;
+                    input /= 10;
                     p++;
                 }
                 string ps = p.ToString();
@@ -386,12 +400,60 @@ namespace UnitCalculator
 
                     }
                 }
-                result = String.Format("{0} * 10{1}", Math.Round(input_p, 3), psu);
+                result = String.Format("{0} * 10{1}", Math.Round(input, 3), psu);
             }
-            else
+            else if(input > 0.001)
                 result = Math.Round(input, 3).ToString();
-            return result;
+            else
+            {
+                int p = 0;
+                while(input < 1)
+                {
+                    input *= 10;
+                    p++;
+                }
+                string ps = p.ToString();
+                string psu = "\x207B";
+                foreach (char c in ps)
+                {
+                    switch (int.Parse(c.ToString()))
+                    {
+                        case 1:
+                            psu += "\xB9";
+                            break;
+                        case 2:
+                            psu += "\xB2";
+                            break;
+                        case 3:
+                            psu += "\xB3";
+                            break;
+                        case 4:
+                            psu += "\u2074";
+                            break;
+                        case 5:
+                            psu += "\u2075";
+                            break;
+                        case 6:
+                            psu += "\u2076";
+                            break;
+                        case 7:
+                            psu += "\u2077";
+                            break;
+                        case 8:
+                            psu += "\u2078";
+                            break;
+                        case 9:
+                            psu += "\u2079";
+                            break;
+                        case 0:
+                            psu += "\u2070";
+                            break;
 
+                    }
+                }
+                result = String.Format("{0} * 10{1}", Math.Round(input, 3), psu);
+            }
+            return result;
         }
 
         private double milesToMetres(double input)
@@ -407,10 +469,9 @@ namespace UnitCalculator
             double ft = (inches - (inches % 12)) / 12;                     
             inches %= 12;                                               
             if (inches != 0)                                            
-                result = String.Format("{0} ft {1} in''", convertToStandard(ft).ToString(), inches);   
+                result = String.Format("{0} ft {1} in", convertToStandard(ft).ToString(), inches);   
             else
-                result = convertToStandard(ft).ToString();
-            //MessageBox.Show(String.Format("{0} and {1}", convertToStandard(ft).ToString(), inches));
+                result = convertToStandard(ft).ToString() + " feet";
             return result;
             
         }
